@@ -31,6 +31,21 @@ def save_thank_you_letter(id,form_letter)
   end
 end
 
+def clean_phone_number(homephone)
+  if homephone.length < 10
+    homephone = "BAD NUMBER"
+  elsif homephone.length == 11 && homephone[0] == "1"
+    homephone.slice!(0)
+    homephone
+  elsif homephone.length == 11 && homephone[0] != "1"
+    homephone = "BAD NUMBER"
+  elsif homephone.length > 11
+    homephone = "BAD NUMBER"
+  else
+    homephone
+  end
+end
+
 puts 'EventManager initialized.'
 
 contents = CSV.open(
@@ -47,8 +62,15 @@ contents.each do |row|
   name = row[:first_name]
   zipcode = clean_zipcode(row[:zipcode])
   legislators = legislators_by_zipcode(zipcode)
+  homephone = clean_phone_number(row[:homephone].delete("^0-9"))
 
   form_letter = erb_template.result(binding)
 
   save_thank_you_letter(id,form_letter)
+  
+
+  
+
+  puts "#{name} #{zipcode} #{homephone}"
+  
 end
