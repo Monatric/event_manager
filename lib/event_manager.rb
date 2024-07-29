@@ -56,11 +56,25 @@ def count_hour(hour)
   end
 end
 
+def count_day(day)
+  if DAY_COUNTER.key?(day)
+    DAY_COUNTER[day] += 1
+  else
+    DAY_COUNTER[day] = 1
+  end
+end
+
 def find_peak_hours(hour_counter)
   #get the max value or hours with most appearances
   max = hour_counter.values.max
   peak_hours = Hash[hour_counter.select { |k, v| v == max}]
   peak_hours.keys
+end
+
+def find_peak_days(day_counter)
+  max = day_counter.values.max
+  peak_days = Hash[day_counter.select { |k, v| v == max}]
+  peak_days.keys
 end
 
 puts 'EventManager initialized.'
@@ -74,6 +88,7 @@ contents = CSV.open(
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
 HOUR_COUNTER = {}
+DAY_COUNTER = {}
 
 contents.each do |row|
   id = row[0]
@@ -82,15 +97,20 @@ contents.each do |row|
   legislators = legislators_by_zipcode(zipcode)
   homephone = clean_phone_number(row[:homephone].delete("^0-9"))
   hour = DateTime.strptime(row[:regdate], '%m/%d/%Y %H:%M').hour
+  day = DateTime.strptime(row[:regdate], '%m/%d/%Y %H:%M').wday
+
   count_hour(hour)
+  count_day(day)
   
   form_letter = erb_template.result(binding)
 
   save_thank_you_letter(id,form_letter)
 
-  puts "#{name} #{zipcode} #{homephone}"
+  puts "#{name} #{zipcode} #{homephone} #{day}"
 end
 
 peak_hours = find_peak_hours(HOUR_COUNTER)
+peak_days = find_peak_days(DAY_COUNTER)
 
 puts "The peak hours are #{peak_hours}"
+puts "The peak days are #{peak_days}"
