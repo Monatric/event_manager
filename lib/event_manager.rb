@@ -1,6 +1,8 @@
 require 'csv'
 require 'google/apis/civicinfo_v2'
 require 'erb'
+require 'time'
+require 'date'
 
 def clean_zipcode(zipcode)
   zipcode.to_s.rjust(5,"0")[0..4]
@@ -46,6 +48,21 @@ def clean_phone_number(homephone)
   end
 end
 
+def count_hour(hour)
+  if HOUR_COUNTER.key?(hour)
+    HOUR_COUNTER[hour] += 1
+  else
+    HOUR_COUNTER[hour] = 1
+  end
+end
+
+def find_peak_hours(hour_counter)
+  #get the max value or hours with most appearances
+  max = hour_counter.values.max
+  peak_hours = Hash[hour_counter.select { |k, v| v == max}]
+  peak_hours.keys
+end
+
 puts 'EventManager initialized.'
 
 contents = CSV.open(
@@ -56,6 +73,7 @@ contents = CSV.open(
 
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
+HOUR_COUNTER = {}
 
 contents.each do |row|
   id = row[0]
@@ -63,14 +81,16 @@ contents.each do |row|
   zipcode = clean_zipcode(row[:zipcode])
   legislators = legislators_by_zipcode(zipcode)
   homephone = clean_phone_number(row[:homephone].delete("^0-9"))
-
+  hour = DateTime.strptime(row[:regdate], '%m/%d/%Y %H:%M').hour
+  count_hour(hour)
+  
   form_letter = erb_template.result(binding)
 
   save_thank_you_letter(id,form_letter)
-  
-
-  
 
   puts "#{name} #{zipcode} #{homephone}"
-  
 end
+
+peak_hours = find_peak_hours(HOUR_COUNTER)
+
+puts "The peak hours are #{peak_hours}"
